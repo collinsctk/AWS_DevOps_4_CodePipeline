@@ -1,15 +1,9 @@
 #!/bin/bash
 
-# 设置aws的region
-mkdir ~/.aws/
-echo '[default]' > ~/.aws/config
-echo 'region=us-east-1' >> ~/.aws/config
-
 # 安装python3
 yum install -y python3
 
 # 安装python 模块
-pip3 install boto3
 pip3 install flask
 pip3 install requests
 
