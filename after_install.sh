@@ -21,3 +21,5 @@ mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf-bak
 cp /aws_flask/config_files/nginx.conf /etc/nginx/nginx.conf
 systemctl start nginx
 systemctl enable nginx
+
+systemctl restart qytang.service

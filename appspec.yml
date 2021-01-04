@@ -8,4 +8,4 @@ hooks:
 #    - location: before_install.sh
   AfterInstall:
     - location: after_install.sh
-      timeout: 60
+      timeout: 360
