@@ -1,0 +1,201 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Qytang AWS DevOps CodePipeLine
+
+Mappings:
+    AWSInstanceType2Arch:
+        t2.micro:
+            Arch: HVMG2
+        t2.nano:
+            Arch: HVMG2
+    AWSRegionArch2AMI:
+        ap-northeast-2:
+            HVMG2: ami-03461b78fdba0ff9d
+        ap-southeast-2:
+            HVMG2: ami-088ff0e3bde7b3fdf
+        us-east-1:
+            HVMG2: ami-04d29b6f966df1537
+
+Resources:
+    ########################## VPC PART ##########################
+    CFInternetGW:
+        Type: "AWS::EC2::InternetGateway"
+        Properties:
+            Tags:
+                -   Key: Name
+                    Value: CFInternetGW
+
+    CFVPC:
+        Type: "AWS::EC2::VPC"
+        Properties:
+            CidrBlock: 10.2.0.0/16
+            EnableDnsHostnames: true
+            EnableDnsSupport: true
+            Tags:
+                -   Key: Name
+                    Value: CFVPC
+
+    AttachGW:
+        Type: "AWS::EC2::VPCGatewayAttachment"
+        Properties:
+            VpcId: !Ref CFVPC
+            InternetGatewayId: !Ref CFInternetGW
+
+    OutsideNet:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone:
+                "Fn::Select":
+                    - 0
+                    -   "Fn::GetAZs": ""
+            CidrBlock: 10.2.11.0/24
+            MapPublicIpOnLaunch: true
+            Tags:
+                -   Key: Name
+                    Value: Outside-Net
+            VpcId: !Ref CFVPC
+
+    OutsideRouteTable:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+            VpcId: !Ref CFVPC
+            Tags:
+                -   Key: Name
+                    Value: Outside_Route_Table
+
+    OutsideNetAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+            RouteTableId: !Ref OutsideRouteTable
+            SubnetId: !Ref OutsideNet
+
+    OutsideDefaultRoute:
+        Type: "AWS::EC2::Route"
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref CFInternetGW
+            RouteTableId: !Ref OutsideRouteTable
+
+    InstanceSecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: Allow tcp/80 and tcp/22
+            VpcId: !Ref CFVPC
+            SecurityGroupIngress:
+                -   IpProtocol: tcp
+                    FromPort: 22
+                    ToPort: 22
+                    CidrIp: 0.0.0.0/0
+                -   IpProtocol: tcp
+                    FromPort: 80
+                    ToPort: 80
+                    CidrIp: 0.0.0.0/0
+
+    ########################## EC2 PART ##########################
+    WebServiceRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    -   Effect: "Allow"
+                        Principal:
+                            Service:
+                                - "ec2.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRole"
+            Path: "/"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/AWSCodeCommitFullAccess
+                - arn:aws:iam::aws:policy/AmazonS3FullAccess
+                - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+                - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+                - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+
+    WebService:
+        Type: "AWS::IAM::InstanceProfile"
+        Properties:
+            Path: /
+            Roles:
+                - !Ref WebServiceRole
+
+    EC2Instance:
+        Type: "AWS::EC2::Instance"
+        Properties:
+            InstanceType: t2.micro
+            Tags:
+                -   Key: Name
+                    Value: QYT_AWS_DevOps
+            KeyName: us-key
+            #      KeyName: new-aws
+            UserData:
+                "Fn::Base64":
+                    "Fn::Join":
+                        - ""
+                        -   - "#!/bin/bash\n"
+                            - "yum install ruby -y\n"
+                            - "aws s3 cp s3://aws-codedeploy-ap-northeast-2/latest/install . --region "
+                            - !Ref AWS::Region
+                            - "\n"
+                            - "chmod +x install\n"
+                            - "./install auto\n"
+
+            IamInstanceProfile: !Ref WebService
+            NetworkInterfaces:
+                -   NetworkInterfaceId: !Ref NetworkInterface
+                    DeviceIndex: 0
+            ImageId:
+                "Fn::FindInMap":
+                    - "AWSRegionArch2AMI"
+                    - !Ref AWS::Region
+                    -   "Fn::FindInMap":
+                            - AWSInstanceType2Arch
+                            - t2.micro
+                            - Arch
+
+    NetworkInterface:
+        Type: "AWS::EC2::NetworkInterface"
+        Properties:
+            GroupSet:
+                - !Ref InstanceSecurityGroup
+            SubnetId: !Ref OutsideNet
+
+    ########################## Deploy Group ##########################
+    DeployRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    -   Effect: "Allow"
+                        Principal:
+                            Service:
+                                - "codedeploy.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRole"
+            Path: "/"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
+    DeployAPP:
+        Type: AWS::CodeDeploy::Application
+        Properties:
+            ApplicationName: qytang_aws_flask_app
+            ComputePlatform: Server
+
+    DeployGroup:
+        Type: AWS::CodeDeploy::DeploymentGroup
+        Properties:
+            ApplicationName: !Ref DeployAPP
+            DeploymentGroupName: qytang_aws_flask_deloy_group
+            ServiceRoleArn: !GetAtt DeployRole.Arn
+            Ec2TagFilters:
+                - Key: Name
+                  Value: QYT_AWS_DevOps
+                  Type: KEY_AND_VALUE
+            DeploymentStyle:
+                DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+                DeploymentType: IN_PLACE
+            DeploymentConfigName: CodeDeployDefault.OneAtATime
+
+
+
