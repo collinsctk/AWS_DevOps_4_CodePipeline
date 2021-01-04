@@ -324,8 +324,15 @@ Resources:
 #                            - appconfig:StopDeployment
 #                            - appconfig:GetDeployment
 #                        Resource: "*"
+
+    # 保持CodePipline信息的S3桶
     CodePipelineArtifactStoreBucket:
+        DeletionPolicy: Retain
         Type: 'AWS::S3::Bucket'
+        Properties:
+            BucketName: codepipeline-s3-bucket
+
+    # S3桶策略
     CodePipelineArtifactStoreBucketPolicy:
         Type: 'AWS::S3::BucketPolicy'
         Properties:
@@ -359,7 +366,7 @@ Resources:
                         Condition:
                             Bool:
                                 'aws:SecureTransport': false
-
+    # CodePipeline配置
     DeployPipeline:
         Type: "AWS::CodePipeline::Pipeline"
         Properties:
@@ -400,6 +407,7 @@ Resources:
                           DeploymentGroupName: !Ref DeployGroup
                       RunOrder: 1
 
+    # 查看CloudWatch Event的Role
     AmazonCloudWatchEventRole:
         Type: 'AWS::IAM::Role'
         Properties:
@@ -427,7 +435,7 @@ Resources:
                                         - !Ref 'AWS::AccountId'
                                         - ':'
                                         - !Ref DeployPipeline
-
+    # 配置触发CodePipeline的Event
     AmazonCloudWatchEventRule:
         Type: 'AWS::Events::Rule'
         Properties:
