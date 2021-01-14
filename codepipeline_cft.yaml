@@ -133,7 +133,7 @@ Resources:
                         - ""
                         -   - "#!/bin/bash\n"
                             - "yum install ruby -y\n"
-                            - "aws s3 cp s3://aws-codedeploy-ap-northeast-2/latest/install . --region "
+                            - "aws s3 cp s3://aws-codedeploy-us-east-1/latest/install . --region "
                             - !Ref AWS::Region
                             - "\n"
                             - "chmod +x install\n"
@@ -228,7 +228,7 @@ Resources:
             PolicyName: qytang_codepipeline_policy
             Roles:
                 - !Ref PipeLineRole
-            PolicyDocument:
+            PolicyDocument: # 这个部分是抄的GUI配置后系统自动产生的策略
                 Statement:
                     -   Action:
                             - iam:PassRole
