@@ -180,7 +180,7 @@ Resources:
         Type: AWS::CodeDeploy::Application
         Properties:
             ApplicationName: qytang_aws_flask_app
-            ComputePlatform: Server
+            ComputePlatform: Server # EC2/On-premises
 
     DeployGroup:
         Type: AWS::CodeDeploy::DeploymentGroup
@@ -188,14 +188,14 @@ Resources:
             ApplicationName: !Ref DeployAPP
             DeploymentGroupName: qytang_aws_flask_deloy_group
             ServiceRoleArn: !GetAtt DeployRole.Arn
-            Ec2TagFilters:
+            Ec2TagFilters: # 通过标签过滤要部署的EC2
                 - Key: Name
                   Value: QYT_AWS_DevOps
                   Type: KEY_AND_VALUE
             DeploymentStyle:
                 DeploymentOption: WITHOUT_TRAFFIC_CONTROL
-                DeploymentType: IN_PLACE
-            DeploymentConfigName: CodeDeployDefault.OneAtATime
+                DeploymentType: IN_PLACE # 对存在的instances进行! 停止,升级和重启!
+            DeploymentConfigName: CodeDeployDefault.OneAtATime # 一次一个
 
     ########################## CodePipeLine ##########################
     PipeLineRole:
@@ -394,7 +394,7 @@ Resources:
                 Type: S3
                 Location: !Ref CodePipelineArtifactStoreBucket
             Stages:
-                - Name: Source
+                - Name: Source # 定义源，CodeCommit仓库
                   Actions:
                     - Name: Source
                       ActionTypeId:
@@ -409,7 +409,7 @@ Resources:
                           RepositoryName: AWS_DevOps_4_CodePipeline
                           PollForSourceChanges: false
                       RunOrder: 1
-                - Name: Deploy
+                - Name: Deploy # 定义部署
                   Actions:
                     - Name: Deploy
                       InputArtifacts:
@@ -420,11 +420,11 @@ Resources:
                           Version: 1
                           Provider: CodeDeploy
                       Configuration:
-                          ApplicationName: !Ref DeployAPP
-                          DeploymentGroupName: !Ref DeployGroup
+                          ApplicationName: !Ref DeployAPP # 应用名字
+                          DeploymentGroupName: !Ref DeployGroup # DeploymentGroup名字
                       RunOrder: 1
 
-    # 查看CloudWatch Event的Role
+    ########################## CloudWatch Event触发CodePipeLine ##########################
     AmazonCloudWatchEventRole:
         Type: 'AWS::IAM::Role'
         Properties:
@@ -461,7 +461,7 @@ Resources:
                     - aws.codecommit
                 detail-type:
                     - CodeCommit Repository State Change
-                resources:
+                resources: # CodeCommit Repos
                     - !Join
                         - ''
                         -   - 'arn:aws:codecommit:'
@@ -471,14 +471,14 @@ Resources:
                             - ':'
                             - AWS_DevOps_4_CodePipeline
                 detail:
-                    event:
+                    event: # 相关事件
                         - referenceCreated
                         - referenceUpdated
                     referenceType:
                         - branch
                     referenceName:
                         - master
-            Targets:
+            Targets: # 触发CodePipeline
                 -   Arn: !Join
                         - ''
                         -   - 'arn:aws:codepipeline:'
