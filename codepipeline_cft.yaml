@@ -159,6 +159,16 @@ Resources:
                 - !Ref InstanceSecurityGroup
             SubnetId: !Ref OutsideNet
 
+    myDNSRecord: # DNS记录
+        Type: "AWS::Route53::RecordSet"
+        Properties:
+            HostedZoneId: Z1JOS2YODO11W5 # Zone的ID
+            Comment: DNS name for my instance.
+            Name: codepipeline.mingjiao.org. # 域名
+            Type: A # A记录
+            TTL: 30 # TTL超时时间
+            ResourceRecords: [!GetAtt EC2Instance.PublicIp]
+
     ########################## Deploy Group ##########################
     DeployRole:
         Type: "AWS::IAM::Role"
