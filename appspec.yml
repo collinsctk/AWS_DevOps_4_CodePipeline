@@ -10,12 +10,12 @@ hooks:
     - location: after_install.sh
       timeout: 180
   ApplicationStart:
-    - location: start_nginx.sh
     - location: start_uwsgi.sh
+    - location: start_nginx.sh
       timeout: 300
       runas: root
   ApplicationStop:
-    - location: stop_nginx.sh
     - location: stop_uwsgi.sh
+    - location: stop_nginx.sh
       timeout: 300
       runas: root
