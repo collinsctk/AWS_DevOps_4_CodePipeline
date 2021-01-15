@@ -9,12 +9,12 @@ hooks:
   AfterInstall: # 配置服务
     - location: after_install.sh
       timeout: 180
-  ApplicationStart:
+  ApplicationStart: # 开始服务的脚本
     - location: start_uwsgi.sh
     - location: start_nginx.sh
       timeout: 300
       runas: root
-  ApplicationStop:
+  ApplicationStop: # 停止服务的脚本
     - location: stop_uwsgi.sh
     - location: stop_nginx.sh
       timeout: 300
