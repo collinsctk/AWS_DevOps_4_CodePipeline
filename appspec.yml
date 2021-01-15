@@ -9,3 +9,13 @@ hooks:
   AfterInstall: # 配置服务
     - location: after_install.sh
       timeout: 180
+  ApplicationStart:
+    - location: start_nginx.sh
+    - location: start_uwsgi.sh
+      timeout: 300
+      runas: root
+  ApplicationStop:
+    - location: stop_nginx.sh
+    - location: stop_uwsgi.sh
+      timeout: 300
+      runas: root

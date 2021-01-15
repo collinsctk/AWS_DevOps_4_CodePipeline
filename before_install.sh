@@ -14,4 +14,4 @@ ln -s /usr/local/bin/uwsgi /usr/bin/uwsgi
 
 # 安装NGINX
 amazon-linux-extras install -y nginx1.12
-
+systemctl enable nginx
