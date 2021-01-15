@@ -4,8 +4,8 @@ files:
   - source: .
     destination: /aws_flask/
 hooks:
-#  BeforeInstall:
-#    - location: before_install.sh
-  AfterInstall:
+  BeforeInstall: # 安装依赖模块
+    - location: before_install.sh
+  AfterInstall: # 配置服务
     - location: after_install.sh
       timeout: 180

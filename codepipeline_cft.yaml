@@ -133,7 +133,9 @@ Resources:
                         - ""
                         -   - "#!/bin/bash\n"
                             - "yum install ruby -y\n"
-                            - "aws s3 cp s3://aws-codedeploy-us-east-1/latest/install . --region "
+                            - "aws s3 cp s3://aws-codedeploy-"
+                            - !Ref AWS::Region
+                            - "/latest/install . --region "
                             - !Ref AWS::Region
                             - "\n"
                             - "chmod +x install\n"
@@ -203,7 +205,7 @@ Resources:
                   Value: QYT_AWS_DevOps
                   Type: KEY_AND_VALUE
             DeploymentStyle:
-                DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+                DeploymentOption: WITHOUT_TRAFFIC_CONTROL # 是否使用负载均衡器
                 DeploymentType: IN_PLACE # 对存在的instances进行! 停止,升级和重启!
             DeploymentConfigName: CodeDeployDefault.OneAtATime # 一次一个
 
@@ -395,6 +397,7 @@ Resources:
                                 'aws:SecureTransport': false
     # CodePipeline配置
     DeployPipeline:
+        DependsOn: EC2Instance
         Type: "AWS::CodePipeline::Pipeline"
         Properties:
             Name: qytang_aws_devops_pipeline
@@ -411,12 +414,12 @@ Resources:
                           Category: Source
                           Owner: AWS
                           Version: 1
-                          Provider: CodeCommit
+                          Provider: CodeCommit # 仓库托管在CodeCommit
                       OutputArtifacts:
                           -   Name: SourceOutput
                       Configuration:
-                          BranchName: master
-                          RepositoryName: AWS_DevOps_4_CodePipeline
+                          BranchName: master # 使用分支
+                          RepositoryName: AWS_DevOps_4_CodePipeline # 仓库名称
                           PollForSourceChanges: false
                       RunOrder: 1
                 - Name: Deploy # 定义部署
